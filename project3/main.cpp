@@ -4,91 +4,97 @@
 #include <vector>
 #include <stdio.h>
 #include <stdlib.h>
-
-struct AdjListNode{
-    int dest;
-    int weight;
-    struct AdjListNode* next;
-};
-
-struct AdjList{
-    struct AdjListNode* head;
-};
-
-struct Graph{
-    int V;
-    struct AdjList* array;
-};
-struct AdjListNode* newAdjListNode(int dest){
-    struct AdjListNode* newNode = (struct AdjListNode*) malloc(sizeof(struct AdjListNode));
-    newNode->dest = dest;
-    newNode->next = NULL;
-    return newNode;
-}
+#include <queue>
+#include "util.h"
+#include "graph.h"
+#include "heap.h"
+#include "main.h"
 
 
-struct Graph* createGraph(int vertices){
-    struct Graph* graph = (struct Graph*) malloc(sizeof(struct Graph));
-    graph->V = vertices; 
-    graph->array = (struct AdjList*) malloc(vertices * sizeof(struct AdjList));
-    int i;
-    for (i = 0; i < vertices; ++i)
-        graph->array[i].head = NULL;
-    return graph;
-}
-
-void addEdge(struct Graph* graph, int src, int dest, int weight){
-    struct AdjListNode* newNode = newAdjListNode(dest);
-    newNode->next = graph->array[src].head;
-    newNode->weight = weight;
-    graph->array[src].head = newNode;
-    
-    //if undirected, same back
-    newNode = newAdjListNode(src);
-    newNode->next = graph->array[dest].head;
-    graph->array[dest].head = newNode;
-}
-
-void readFromFile(std::string fileName){
+void command() {
+    std::string fileName;
+    std::string direction;
+    int dFlag;
+    std::cin >> fileName;
+    std::cin >> direction;
+    bool findCommandDone = false;
+    int commandSourceW = 0;
+    int commandDestinationW = 0;
+    int flag = 0;
+    int commandSource = 0;
+    int commandDestination = 0;
     int vertices;
     int edges;
     int edgeID;
     int vertexu;
     int vertexv;
-    int weight;
-
-    std::ifstream inFile("network01.txt");
-    if (inFile.is_open()) {
-        inFile >> vertices;
-        inFile >> edges;
-        //pNODE* A;
-        //char* theVertices = (char*)malloc(sizeof(int) *vertices);
-        //char* a = new char[vertices];
-       // A = (pNODE*)calloc(vertices + 1, sizeof(pNODE));
-        //NODE* pointer = new NODE[vertices];
-        /*for (int i = 0; i < edges; i++) {
-            // a[i] = i + 1;
-         }*/
-        struct Graph* graph = createGraph(vertices);
-        for (int i = 0; i < edges; i++) {
+    float weight;
+    std::string command1;
+    std::string command2;
+    if (direction == "directed") {
+            dFlag = 1;
+        }
+    else {
+            dFlag = 0;
+        }
+    std::ifstream inFile(fileName);
+    inFile >> vertices;
+    inFile >> edges;
+    struct Graph* graph = createGraph(vertices);
+    for (int i = 1; i <= edges; i++) {
             inFile >> edgeID;
             inFile >> vertexu;
             inFile >> vertexv;
             inFile >> weight;
-            addEdge(graph, vertexu, vertexv, weight);
-        }
+            addEdge(graph, vertexu, vertexv, weight, dFlag);
     }
-    else {
-        std::cout << "Error: cannot open file for reading" << std::endl;
+    int i;
+    VERTEX* vert = new VERTEX[vertices + 1];
+    for (i = 1; i <= vertices; i++) {
+            vert[i].color = 0;
+            vert[i].pi = 0;
+            vert[i].d = FLT_MAX;
+
     }
-}
-void command() {
-    std::string fileName;
-    std::string weight;
     while (true) {
-        std::cin >> fileName;
-        std::cin >> weight;
-        readFromFile(fileName);
+    
+        std::cin >> command1;
+        if (command1 == "find") {
+
+            std::cin >> commandSource;
+            std::cin >> commandDestination;
+            std::cin >> flag;
+            std::cout << "Query: find " << commandSource 
+                      << " "            << commandDestination
+                      << " "            << flag << std::endl;
+            dij(graph, vert ,commandSource, commandDestination, flag);
+            findCommandDone = true;
+        }
+        if (command1 == "write") {
+            std::cin >> command2;
+            std::cin >> commandSourceW;
+            std::cin >> commandDestinationW;
+            if (findCommandDone == false) {
+                printf("Error: no path computation done\n");
+            }
+            else {
+                if (commandSourceW != commandSource) {
+                    printf("Error: invalid source destination pair\n");
+                }
+                else {
+                    std::cout << "Query: write path " << commandSourceW
+                              << " "                  << commandDestinationW
+                              << std::endl;
+                    printPath(commandSourceW, commandDestinationW, vert);
+                }
+            }
+           
+        }
+        if (command1 == "stop") {
+            free(graph);
+            free(vert);
+            return;
+        }
     }
 }
 
